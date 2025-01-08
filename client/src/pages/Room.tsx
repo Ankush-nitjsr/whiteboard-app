@@ -5,7 +5,7 @@ import { Socket } from "socket.io-client";
 interface RoomProps {
   uuid: () => string;
   socket: Socket;
-  setUser: (user: string) => void;
+  setUser: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export const Room = ({ uuid, socket, setUser }: RoomProps) => {
