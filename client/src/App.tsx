@@ -1,48 +1,83 @@
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import CanvasDrawing from "./components/canvas-drawing/CanvasDrawing";
+import { Room } from "./pages/Room";
 import { useEffect, useState } from "react";
-import "./App.css";
-import Board from "./components/board/Board";
+import { io } from "socket.io-client";
 
-const CanvasDrawing = () => {
-  const [brushColor, setBrushColor] = useState<string>("black");
-  const [brushSize, setBrushSize] = useState<number>(5);
+type UserJoinedData = {
+  success: boolean;
+};
+
+const server = "http://localhost:5001";
+const connectionOptions = {
+  "force new connection": true,
+  reconnectionAttempts: Infinity,
+  timeout: 10000,
+  transports: ["websocket"],
+};
+
+const socket = io(server, connectionOptions);
+
+const App = () => {
+  const [user, setUser] = useState<string | null>(null);
+
+  console.log("User: ", user);
 
   useEffect(() => {
-    console.log("CanvasDrawing Brush Size:", brushSize);
-  }, [brushSize]);
+    const userJoinedHandler = (data: UserJoinedData) => {
+      if (data.success) {
+        console.log("userJoined");
+      } else {
+        console.log("userJoined error");
+      }
+    };
+
+    socket.on("userIsJoined", userJoinedHandler);
+
+    // Handle connection errors
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
+
+    return () => {
+      socket.off("userIsJoined", userJoinedHandler);
+    };
+  }, []);
+
+  // Generate random uuid for room number
+  const uuid = () => {
+    const S4 = () => {
+      return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    };
+    return (
+      S4() +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      S4() +
+      S4()
+    );
+  };
 
   return (
     <div className="App">
-      <h1>Collaborative Whiteboard</h1>
-      <div>
-        <Board brushColor={brushColor} brushSize={brushSize} />
-        <div className="tools">
-          <div>
-            <label>
-              <span>Color: </span>
-              <input
-                type="color"
-                value={brushColor}
-                onChange={(e) => setBrushColor(e.target.value)}
-              />
-            </label>
-          </div>
-          <div>
-            <label>
-              <span>Size: </span>
-              <input
-                type="range"
-                min="1"
-                max="100"
-                value={brushSize}
-                onChange={(e) => setBrushSize(Number(e.target.value))}
-              />
-            </label>
-            <span>{brushSize}</span>
-          </div>
-        </div>
-      </div>
+      <Router>
+        <Routes>
+          <Route path="/" element={<CanvasDrawing />} />
+          <Route
+            path="/room"
+            element={<Room uuid={uuid} socket={socket} setUser={setUser} />}
+          />
+        </Routes>
+      </Router>
     </div>
   );
 };
 
-export default CanvasDrawing;
+export default App;
