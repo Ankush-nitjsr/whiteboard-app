@@ -4,7 +4,7 @@ import { Socket } from "socket.io-client";
 interface CreateRoomFormProps {
   uuid: () => string;
   socket: Socket;
-  setUser: (user: string) => void;
+  setUser: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
