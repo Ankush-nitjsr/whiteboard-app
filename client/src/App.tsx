@@ -69,7 +69,7 @@ const App = () => {
     <div className="App">
       <Router>
         <Routes>
-          <Route path="/" element={<CanvasDrawing />} />
+          <Route path="/:roomId" element={<CanvasDrawing />} />
           <Route
             path="/room"
             element={<Room uuid={uuid} socket={socket} setUser={setUser} />}
