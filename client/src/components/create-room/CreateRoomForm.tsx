@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Socket } from "socket.io-client";
 
 interface CreateRoomFormProps {
@@ -10,6 +11,8 @@ interface CreateRoomFormProps {
 const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
   const [name, setName] = useState("");
   const [roomId, setRoomId] = useState(uuid());
+
+  const navigate = useNavigate();
 
   const handleCreateRoom = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,6 +26,9 @@ const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
     };
 
     setUser(name);
+    navigate(`/${roomId}`);
+    console.log(roomData);
+
     socket.emit("userJoined", roomData);
   };
 
