@@ -12,7 +12,7 @@ export const Room = ({ uuid, socket, setUser }: RoomProps) => {
   return (
     <div className="flex justify-evenly gap-4 w-full">
       <CreateRoomForm uuid={uuid} socket={socket} setUser={setUser} />
-      <JoinRoomForm />
+      <JoinRoomForm uuid={uuid} socket={socket} setUser={setUser} />
     </div>
   );
 };
