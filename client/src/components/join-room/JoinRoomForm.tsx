@@ -25,7 +25,7 @@ export const JoinRoomForm = ({ uuid, socket, setUser }: JoinRoomFormProps) => {
       presenter: false,
     };
 
-    setUser(name);
+    setUser(roomData);
     navigate(`/${roomId}`);
     console.log(roomData);
 
