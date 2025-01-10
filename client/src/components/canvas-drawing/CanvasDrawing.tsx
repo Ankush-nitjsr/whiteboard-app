@@ -14,7 +14,7 @@ interface CanvasDrawingProps {
 
 const CanvasDrawing = ({ user, socket, users }: CanvasDrawingProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const ctxRef = useRef(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   const [tool, setTool] = useState("pencil");
   const [brushColor, setBrushColor] = useState<string>("#000000");
