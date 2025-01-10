@@ -1,77 +1,84 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
+const socketIO = require("socket.io");
+
+const userServices = require("./services/users");
 
 const app = express();
 const server = http.createServer(app);
-const socketIO = require("socket.io");
-
-app.use(cors());
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
-});
-
-// Initialize socket.io with CORS configuration
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:5173", // Replace with your frontend's URL
+    origin: "http://localhost:5173",q
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
   },
 });
 
+app.use(cors());
+app.use(express.json());
+
+// Root endpoint
 app.get("/", (req, res) => {
-  res.send("server");
+  res.send("Server is running...");
 });
 
-// socket.io logic
-let imageUrl, userRoom;
+let imageUrlGlobal = null; // Global whiteboard image
+
 io.on("connection", (socket) => {
-  socket.on("userJoined", (data) => {
-    const { userName, userId, roomId, host, presenter } = data;
-    userRoom = roomId;
-    // const user = userJoin(socket.id, userName, roomId, host, presenter);
-    // const roomUsers = getUsers(user.room);
-    // socket.join(user.room);
-    // socket.emit("message", {
-    //   message: "Welcome to ChatRoom",
-    // });
-    // socket.broadcast.to(user.room).emit("message", {
-    //   message: `${user.username} has joined`,
-    // });
+  console.log(`New connection: ${socket.id}`);
 
-    // io.to(user.room).emit("users", roomUsers);
-    // io.to(user.room).emit("canvasImage", imageUrl);
+  // When a user joins a room
+  socket.on("userJoined", async (data) => {
+    const { name, userId, roomId, host, presenter } = data;
+    await userServices.addUser({
+      name,
+      userId,
+      roomId,
+      host,
+      presenter,
+      socketId: socket.id,
+    });
+
+    const usersInRoom = await userServices.getUsersInRoom(roomId);
+    socket.join(roomId);
+    console.log(`User joined room: ${roomId}`);
+
+    socket.emit("userIsJoined", { success: true, users: usersInRoom });
+    socket.broadcast.to(roomId).emit("allUsers", usersInRoom);
+
+    if (imageUrlGlobal) {
+      socket.emit("whiteboardDataResponse", { imgURL: imageUrlGlobal });
+    }
   });
 
-  socket.on("drawing", (data) => {
-    imageUrl = data;
-    socket.broadcast.to(userRoom).emit("canvasImage", imageUrl);
+  // Whiteboard data broadcasting
+  socket.on("whiteboardData", (data) => {
+    const { imgUrl, roomId } = data;
+    imageUrlGlobal = imgUrl;
+    socket.broadcast
+      .to(roomId)
+      .emit("whiteboardDataResponse", { imgURL: imgUrl });
+    console.log(`Whiteboard updated for room: ${roomId}`);
   });
 
-  // Uncomment and implement userLeave and getUsers if needed
-  // socket.on("disconnect", () => {
-  //   const userLeaves = userLeave(socket.id);
-  //   const roomUsers = getUsers(userRoom);
-
-  //   if (userLeaves) {
-  //     io.to(userLeaves.room).emit("message", {
-  //       message: `${userLeaves.username} left the chat`,
-  //     });
-  //     io.to(userLeaves.room).emit("users", roomUsers);
-  //   }
-  // });
+  // When a user disconnects
+  socket.on("disconnect", async () => {
+    console.log(`User disconnected: ${socket.id}`);
+    const user = await userServices.getUser(socket.id);
+    if (user) {
+      await userServices.removeUser(user.userId);
+      const usersInRoom = await userServices.getUsersInRoom(user.roomId);
+      socket.broadcast.to(user.roomId).emit("allUsers", usersInRoom);
+    }
+  });
 });
 
-// Serve on port
+// Start server
 const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () =>
-  console.log(`server is listening on http://localhost:${PORT}`)
+  console.log(`Server running on http://localhost:${PORT}`)
 );
