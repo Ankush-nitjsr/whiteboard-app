@@ -83,14 +83,14 @@ const App = () => {
       <Router>
         <Routes>
           <Route
+            path="/"
+            element={<Room uuid={uuid} socket={socket} setUser={setUser} />}
+          />
+          <Route
             path="/:roomId"
             element={
               <CanvasDrawing user={user} socket={socket} users={users} />
             }
-          />
-          <Route
-            path="/room"
-            element={<Room uuid={uuid} socket={socket} setUser={setUser} />}
           />
         </Routes>
       </Router>
