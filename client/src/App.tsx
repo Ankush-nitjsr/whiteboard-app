@@ -19,7 +19,8 @@ const connectionOptions = {
 const socket = io(server, connectionOptions);
 
 const App = () => {
-  const [user, setUser] = useState<string | null>(null);
+  const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([]);
 
   console.log("User: ", user);
 
@@ -27,12 +28,17 @@ const App = () => {
     const userJoinedHandler = (data: UserJoinedData) => {
       if (data.success) {
         console.log("userJoined");
+        setUsers(data.users);
       } else {
         console.log("userJoined error");
       }
     };
 
     socket.on("userIsJoined", userJoinedHandler);
+
+    socket.on("allUsers", (data) => {
+      setUsers(data);
+    });
 
     // Handle connection errors
     socket.on("connect_error", (err) => {
@@ -69,7 +75,12 @@ const App = () => {
     <div className="App">
       <Router>
         <Routes>
-          <Route path="/:roomId" element={<CanvasDrawing />} />
+          <Route
+            path="/:roomId"
+            element={
+              <CanvasDrawing user={user} socket={socket} users={users} />
+            }
+          />
           <Route
             path="/room"
             element={<Room uuid={uuid} socket={socket} setUser={setUser} />}
