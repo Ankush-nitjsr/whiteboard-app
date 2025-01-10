@@ -25,7 +25,7 @@ const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
       presenter: true,
     };
 
-    setUser(name);
+    setUser(roomData);
     navigate(`/${roomId}`);
     console.log(roomData);
 
