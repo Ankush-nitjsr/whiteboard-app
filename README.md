@@ -13,7 +13,7 @@ Collaborative Whiteboard is a real-time whiteboard application that enables user
 
 - **Frontend**: React.js (TypeScript)
 - **Backend**: Express.js, Node.js
-- **Database**: MySQL
+- **Database**: PostgreSQL
 - **Real-Time Communication**: Socket.IO
 
 ## Installation
