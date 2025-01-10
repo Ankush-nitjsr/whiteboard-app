@@ -3,9 +3,12 @@ import CanvasDrawing from "./components/canvas-drawing/CanvasDrawing";
 import { Room } from "./pages/Room";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import { Users } from "../types/users";
+import User from "../types/user";
 
 type UserJoinedData = {
   success: boolean;
+  users: Users;
 };
 
 const server = "http://localhost:5001";
@@ -19,10 +22,14 @@ const connectionOptions = {
 const socket = io(server, connectionOptions);
 
 const App = () => {
-  const [user, setUser] = useState(null);
-  const [users, setUsers] = useState([]);
-
-  console.log("User: ", user);
+  const [user, setUser] = useState<User>({
+    host: false,
+    name: "",
+    presenter: false,
+    roomId: "",
+    userId: "",
+  });
+  const [users, setUsers] = useState<Users>([]);
 
   useEffect(() => {
     const userJoinedHandler = (data: UserJoinedData) => {
