@@ -51,24 +51,34 @@ const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
 
       {/* Name Input */}
       <div>
-        <label className="block text-gray-700 font-medium mb-2">
+        <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
           Your Name
         </label>
         <input
+          id="name"
+          name="name"
           type="text"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
+          autoComplete="on"
         />
       </div>
 
       {/* Room ID Section */}
       <div>
-        <label className="block text-gray-700 font-medium mb-2">Room ID</label>
+        <label
+          htmlFor="roomId"
+          className="block text-gray-700 font-medium mb-2"
+        >
+          Room ID
+        </label>
         <div className="flex items-center space-x-2">
           <input
+            id="roomId"
+            name="roomId"
             type="text"
             value={roomId}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
