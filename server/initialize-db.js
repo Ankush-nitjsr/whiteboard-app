@@ -1,13 +1,13 @@
-const mysql = require("mysql2/promise");
+const { Client } = require("pg");
 const config = require("./config/dbconfig");
 
 const createTables = async () => {
-  const connection = await mysql.createConnection(config.db);
+  const client = new Client(config.db);
 
   // SQL statements for creating tables
   const sql = `
     CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       userId VARCHAR(255) UNIQUE NOT NULL,
       roomId VARCHAR(255) NOT NULL,
@@ -17,28 +17,29 @@ const createTables = async () => {
     );
 
     CREATE TABLE IF NOT EXISTS rooms (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       roomId VARCHAR(255) UNIQUE NOT NULL,
       hostId VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS whiteboards (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       roomId VARCHAR(255) NOT NULL,
       imageUrl TEXT DEFAULT NULL,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
   try {
     console.log("Initializing database...");
-    await connection.query(sql);
+    await client.connect();
+    await client.query(sql);
     console.log("Tables created successfully.");
   } catch (error) {
     console.error("Error initializing database:", error.message);
   } finally {
-    await connection.end();
+    await client.end();
   }
 };
 
