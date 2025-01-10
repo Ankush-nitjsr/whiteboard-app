@@ -1,25 +1,18 @@
 import { useEffect, useState, RefObject, useLayoutEffect } from "react";
 import rough from "roughjs";
 import { Socket } from "socket.io-client";
-
-interface Element {
-  type: "line" | "pencil" | "rectangle";
-  offsetX: number;
-  offsetY: number;
-  width?: number;
-  height?: number;
-  path?: [number, number][];
-  stroke: string;
-}
+import User from "../../../types/user";
+import Element from "../../../types/element";
 
 interface NewBoardProps {
   canvasRef: RefObject<HTMLCanvasElement>;
-  ctxRef: RefObject<CanvasRenderingContext2D | null>;
+  ctxRef: React.MutableRefObject<CanvasRenderingContext2D | null>;
   elements: Element[];
-  setElements: (elements: Element[]) => void;
-  tool: "line" | "pencil" | "rectangle";
+  setElements: React.Dispatch<React.SetStateAction<Element[]>>;
+  tool: string;
   color: string;
-  user: any;
+  brushSize: number;
+  user: User;
   socket: Socket;
 }
 
@@ -32,6 +25,7 @@ export const NewBoard = ({
   setElements,
   tool,
   color,
+  brushSize,
   user,
   socket,
 }: NewBoardProps) => {
@@ -53,6 +47,85 @@ export const NewBoard = ({
     };
   }, [socket]);
 
+  // Initialize the canvas context
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = "round";
+        ctxRef.current = ctx;
+      } else {
+        console.error("Failed to get 2d context.");
+      }
+    } else {
+      console.error("Canvas element not available.");
+    }
+  }, [canvasRef, ctxRef, color, brushSize]);
+
+  // Render the elements on the canvas
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const roughCanvas = rough.canvas(canvasRef.current);
+
+      if (elements.length > 0) {
+        ctxRef.current?.clearRect(
+          0,
+          0,
+          canvasRef.current?.width || 0,
+          canvasRef.current?.height || 0
+        );
+      }
+
+      elements.forEach((element) => {
+        if (element.type === "rectangle") {
+          roughCanvas.draw(
+            roughGenerator.rectangle(
+              element.offsetX,
+              element.offsetY,
+              element.width || 0,
+              element.height || 0,
+              {
+                stroke: element.stroke,
+                strokeWidth: 2,
+                roughness: 0,
+              }
+            )
+          );
+        } else if (element.type === "line") {
+          roughCanvas.draw(
+            roughGenerator.line(
+              element.offsetX,
+              element.offsetY,
+              element.width || 0,
+              element.height || 0,
+              {
+                stroke: element.stroke,
+                strokeWidth: 2,
+                roughness: 0,
+              }
+            )
+          );
+        } else if (element.type === "pencil" && element.path) {
+          roughCanvas.linearPath(element.path, {
+            stroke: element.stroke,
+            strokeWidth: 2,
+            roughness: 0,
+          });
+        }
+      });
+
+      const canvasImage = canvasRef.current?.toDataURL();
+      socket.emit("whiteboardData", {
+        imgUrl: canvasImage,
+        roomId: user.roomId,
+      });
+    }
+  }, [elements, canvasRef, ctxRef, socket, user.roomId]);
+
   // If the user is not the presenter, display the shared image
   if (!user?.presenter) {
     return (
@@ -61,7 +134,7 @@ export const NewBoard = ({
         style={{
           width: whiteboardWidth,
           height: whiteboardHeight,
-          backgroundColor: "white", // Ensure consistent background color
+          backgroundColor: "white",
         }}
       >
         {img ? (
@@ -76,75 +149,6 @@ export const NewBoard = ({
       </div>
     );
   }
-
-  // Initialize the canvas context
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctxRef.current = ctx;
-      }
-    }
-  }, [canvasRef, ctxRef, color]);
-
-  // Render the elements on the canvas
-  useLayoutEffect(() => {
-    const roughCanvas = rough.canvas(canvasRef.current);
-
-    if (elements.length > 0) {
-      ctxRef.current?.clearRect(
-        0,
-        0,
-        canvasRef.current?.width || 0,
-        canvasRef.current?.height || 0
-      );
-    }
-
-    elements.forEach((element) => {
-      if (element.type === "rectangle") {
-        roughCanvas.draw(
-          roughGenerator.rectangle(
-            element.offsetX,
-            element.offsetY,
-            element.width || 0,
-            element.height || 0,
-            {
-              stroke: element.stroke,
-              strokeWidth: 2,
-            }
-          )
-        );
-      } else if (element.type === "line") {
-        roughCanvas.draw(
-          roughGenerator.line(
-            element.offsetX,
-            element.offsetY,
-            element.width || element.offsetX,
-            element.height || element.offsetY,
-            {
-              stroke: element.stroke,
-              strokeWidth: 2,
-            }
-          )
-        );
-      } else if (element.type === "pencil" && element.path) {
-        roughCanvas.linearPath(element.path, {
-          stroke: element.stroke,
-          strokeWidth: 2,
-        });
-      }
-    });
-
-    const canvasImage = canvasRef.current?.toDataURL();
-    socket.emit("whiteboardData", {
-      imgUrl: canvasImage,
-      roomId: user.roomId,
-    });
-  }, [elements, canvasRef, ctxRef, socket, user.roomId]);
 
   // Handle mouse events for drawing
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -190,22 +194,61 @@ export const NewBoard = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-
     const { offsetX, offsetY } = e.nativeEvent;
-    setElements((prevElements) =>
-      prevElements.map((el, idx) =>
-        idx === prevElements.length - 1
-          ? tool === "pencil"
-            ? { ...el, path: [...(el.path || []), [offsetX, offsetY]] }
-            : {
-                ...el,
-                width: offsetX - el.offsetX,
-                height: offsetY - el.offsetY,
+
+    if (isDrawing) {
+      if (tool === "pencil") {
+        const { path } = elements[elements.length - 1];
+
+        if (
+          path &&
+          Array.isArray(path) &&
+          path.every((p) => Array.isArray(p) && p.length === 2)
+        ) {
+          const newPath: [number, number][] = [...path, [offsetX, offsetY]];
+          setElements((prevElements: Element[]) =>
+            prevElements.map((ele: Element, idx) => {
+              if (idx === elements.length - 1) {
+                return {
+                  ...ele,
+                  path: newPath,
+                };
+              } else {
+                return ele;
               }
-          : el
-      )
-    );
+            })
+          );
+        }
+      } else if (tool === "line") {
+        setElements((prevElements: Element[]) =>
+          prevElements.map((ele: Element, idx) => {
+            if (idx === elements.length - 1) {
+              return {
+                ...ele,
+                width: offsetX,
+                height: offsetY,
+              };
+            } else {
+              return ele;
+            }
+          })
+        );
+      } else if (tool === "rectangle") {
+        setElements((prevElements: Element[]) =>
+          prevElements.map((ele: Element, idx) => {
+            if (idx === elements.length - 1) {
+              return {
+                ...ele,
+                width: offsetX - ele.offsetX,
+                height: offsetY - ele.offsetY,
+              };
+            } else {
+              return ele;
+            }
+          })
+        );
+      }
+    }
   };
 
   const handleMouseUp = () => setIsDrawing(false);
