@@ -3,11 +3,10 @@ require("dotenv").config();
 const config = {
   db: {
     host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    port: process.env.DB_PORT || 3306,
-    password: process.env.DB_PASSWORD || "mysqlroot",
-    database: process.env.DB_NAME || "whiteboard",
-    connectTimeout: 60000,
+    user: process.env.DB_USER || "ankush",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "postgres",
+    port: process.env.DB_PORT || 5432,
   },
   listPerPage: 10,
 };
