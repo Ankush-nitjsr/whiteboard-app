@@ -5,9 +5,9 @@ const db = require("./db");
  */
 async function getWhiteboard(roomId) {
   const rows = await db.query(
-    `SELECT id, roomId, imageUrl, updated_at 
+    `SELECT id, roomid, imageurl, updated_at 
      FROM whiteboards 
-     WHERE roomId = ?`,
+     WHERE roomid = $1`,
     [roomId]
   );
 
@@ -20,15 +20,15 @@ async function getWhiteboard(roomId) {
 async function updateWhiteboard(whiteboard) {
   const { roomId, imageUrl } = whiteboard;
   const result = await db.query(
-    `INSERT INTO whiteboards (roomId, imageUrl) 
-     VALUES (?, ?)
-     ON DUPLICATE KEY UPDATE 
-     imageUrl = VALUES(imageUrl), 
-     updated_at = CURRENT_TIMESTAMP`,
+    `INSERT INTO whiteboards (roomid, imageurl) 
+     VALUES ($1, $2)
+     ON CONFLICT (roomid) 
+     DO UPDATE SET imageurl = $2, updated_at = CURRENT_TIMESTAMP 
+     RETURNING affected_rows`,
     [roomId, imageUrl]
   );
 
-  return { affectedRows: result.affectedRows };
+  return { affectedRows: result[0].affected_rows };
 }
 
 module.exports = {

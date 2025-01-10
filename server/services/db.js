@@ -1,23 +1,23 @@
-const mysql = require("mysql2/promise");
+const { Client } = require("pg");
 const config = require("../config/dbconfig");
 
-let connection;
+let client;
 
 /**
- * Initializes the database connection pool.
+ * Initializes the database connection.
  */
 async function initDbConnection() {
-  if (!connection) {
-    connection = await mysql.createPool({
+  if (!client) {
+    client = new Client({
       host: config.db.host,
       user: config.db.user,
       password: config.db.password,
       database: config.db.database,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
+      port: config.db.port || 5432, // Default PostgreSQL port
     });
-    console.log("Database connection pool created");
+
+    await client.connect();
+    console.log("PostgreSQL database connection established");
   }
 }
 
@@ -29,14 +29,14 @@ async function initDbConnection() {
  */
 async function query(sql, params) {
   try {
-    if (!connection) {
+    if (!client) {
       await initDbConnection();
     }
-    const [results] = await connection.execute(sql, params);
-    return results;
+    const res = await client.query(sql, params); // Use client.query for PostgreSQL
+    return res.rows; // PostgreSQL result is in 'rows'
   } catch (err) {
     console.error("Database query error:", err.message);
-    throw err; // Re-throw error for caller to handle
+    throw err;
   }
 }
 
