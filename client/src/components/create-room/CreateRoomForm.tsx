@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Socket } from "socket.io-client";
+import User from "../../../types/user";
 
 interface CreateRoomFormProps {
   uuid: () => string;
   socket: Socket;
-  setUser: React.Dispatch<React.SetStateAction<string | null>>;
+  setUser: React.Dispatch<React.SetStateAction<User>>;
 }
 
 const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
@@ -41,42 +42,62 @@ const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
 
   return (
     <form
-      className="flex flex-col w-[35%] p-4 space-y-4 border border-blue-500"
+      className="flex flex-col w-full max-w-md p-6 space-y-6 bg-white shadow-md rounded-lg border border-gray-200"
       onSubmit={handleCreateRoom}
     >
-      <h1 className="text-xl font-bold text-blue-700">Create Room</h1>
-      <input
-        type="text"
-        className="w-full px-2 py-1"
-        placeholder="Enter your name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <div className="flex space-x-2">
+      <h1 className="text-2xl font-bold text-blue-600 text-center">
+        Create a Room
+      </h1>
+
+      {/* Name Input */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-2">
+          Your Name
+        </label>
         <input
           type="text"
-          value={roomId}
-          className="p-1 w-full"
-          disabled
-          placeholder="Room code"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
         />
-        <button
-          className="border border-blue-500"
-          onClick={() => setRoomId(uuid())}
-        >
-          Generate
-        </button>
-        <button
-          type="button"
-          className="border border-blue-500"
-          onClick={handleCopyRoomId}
-        >
-          Copy
-        </button>
       </div>
-      <button type="submit" className="border border-blue-500">
-        Generate Room
+
+      {/* Room ID Section */}
+      <div>
+        <label className="block text-gray-700 font-medium mb-2">Room ID</label>
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            value={roomId}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+            disabled
+            placeholder="Room code"
+          />
+          <button
+            type="button"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition"
+            onClick={() => setRoomId(uuid())}
+          >
+            Generate
+          </button>
+          <button
+            type="button"
+            className="px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition"
+            onClick={handleCopyRoomId}
+          >
+            Copy
+          </button>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        className="w-full py-2 bg-blue-500 text-white font-medium rounded-lg shadow hover:bg-blue-600 transition"
+      >
+        Create Room
       </button>
     </form>
   );
