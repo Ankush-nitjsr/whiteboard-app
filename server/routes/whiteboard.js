@@ -5,7 +5,10 @@ const whiteboardsService = require("../services/whiteboards");
 /* GET whiteboard data for a room. */
 router.get("/:roomId", async (req, res, next) => {
   try {
-    res.json(await whiteboardsService.getWhiteboard(req.params.roomId));
+    const whiteboard = await whiteboardsService.getWhiteboard(
+      req.params.roomId
+    );
+    res.json(whiteboard);
   } catch (err) {
     console.error(`Error while getting whiteboard: `, err.message);
     next(err);
@@ -15,7 +18,10 @@ router.get("/:roomId", async (req, res, next) => {
 /* POST/PUT whiteboard data for a room. */
 router.post("/", async (req, res, next) => {
   try {
-    res.json(await whiteboardsService.updateWhiteboard(req.body));
+    const updatedWhiteboard = await whiteboardsService.updateWhiteboard(
+      req.body
+    );
+    res.json(updatedWhiteboard);
   } catch (err) {
     console.error(`Error while updating whiteboard: `, err.message);
     next(err);
