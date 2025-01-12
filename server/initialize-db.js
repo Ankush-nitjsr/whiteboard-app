@@ -11,6 +11,7 @@ const createTables = async () => {
       name VARCHAR(255) NOT NULL,
       userId VARCHAR(255) UNIQUE NOT NULL,
       roomId VARCHAR(255) NOT NULL,
+      socketId VARCHAR(255) DEFAULT NULL,
       host BOOLEAN DEFAULT FALSE,
       presenter BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -27,8 +28,9 @@ const createTables = async () => {
       id SERIAL PRIMARY KEY,
       roomId VARCHAR(255) NOT NULL,
       imageUrl TEXT DEFAULT NULL,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT unique_roomId UNIQUE (roomId)
+);
   `;
 
   try {
