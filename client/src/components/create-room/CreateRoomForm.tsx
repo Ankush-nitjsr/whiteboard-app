@@ -22,13 +22,14 @@ const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
       name,
       roomId,
       userId: uuid(),
+      socketId: socket.id,
       host: true,
       presenter: true,
     };
 
     setUser(roomData);
     navigate(`/${roomId}`);
-    console.log(roomData);
+    console.log("room data", roomData);
 
     socket.emit("userJoined", roomData);
   };
