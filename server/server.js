@@ -11,10 +11,10 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const path = require("path");
 
 const userServices = require("./services/users");
-//const whiteboardServices = require("./services/whiteboard");
+const whiteboardServices = require("./services/whiteboard");
 //const roomsRouter = require("./routes/rooms");
 const usersRouter = require("./routes/users");
-//const whiteboardRouter = require("./routes/whiteboard");
+const whiteboardRouter = require("./routes/whiteboard");
 
 const app = express();
 const server = http.createServer(app);
@@ -67,7 +67,7 @@ app.get("/", (req, res) => res.redirect("/api-docs"));
 // API routes
 //app.use("/rooms", roomsRouter);
 app.use("/users", usersRouter);
-//app.use("/whiteboards", whiteboardRouter);
+app.use("/whiteboards", whiteboardRouter);
 
 // Health check route
 app.get("/health", (req, res) =>
@@ -77,7 +77,7 @@ app.get("/health", (req, res) =>
 // WebSocket setup
 io.on("connection", (socket) => {
   console.log(`New connection: ${socket.id}`);
-
+  // When a user joins a room
   socket.on("userJoined", async (data) => {
     try {
       const { name, userId, roomId, socketId, host, presenter } = data;
@@ -100,28 +100,30 @@ io.on("connection", (socket) => {
       socket.emit("userIsJoined", { success: true, users: usersInRoom });
       socket.broadcast.to(roomId).emit("allUsers", usersInRoom);
 
-      //const whiteboard = await whiteboardServices.getWhiteboard(roomId);
-      // if (whiteboard) {
-      //   socket.emit("whiteboardDataResponse", { data: whiteboard });
-      // }
+      const whiteboard = await whiteboardServices.getWhiteboard(roomId);
+      if (whiteboard) {
+        socket.emit("whiteboardDataResponse", { data: whiteboard });
+      }
     } catch (error) {
       console.error("Error in userJoined:", error.message);
       socket.emit("error", { message: "Failed to join room" });
     }
   });
 
-  // socket.on("whiteboardData", async (data) => {
-  //   try {
-  //     const { imageurl, roomId } = data;
-  //     await whiteboardServices.updateWhiteboard({ roomId, imageurl });
-  //     socket.broadcast
-  //       .to(roomId)
-  //       .emit("whiteboardDataResponse", { imgURL: imageurl });
-  //   } catch (error) {
-  //     console.error("Error in whiteboardData:", error.message);
-  //     socket.emit("error", { message: "Failed to update whiteboard" });
-  //   }
-  // });
+  socket.on("whiteboardData", async (data) => {
+    try {
+      const { imageUrl, roomId } = data;
+
+      await whiteboardServices.updateWhiteboard({ roomId, imageUrl });
+      socket.broadcast
+        .to(roomId)
+        .emit("whiteboardDataResponse", { imgURL: imageUrl });
+      console.log(`Whiteboard updated for room: ${roomId}`);
+    } catch (error) {
+      console.error("Error in whiteboardData:", error.message);
+      socket.emit("error", { message: "Failed to update whiteboard" });
+    }
+  });
 
   socket.on("disconnect", async () => {
     try {
