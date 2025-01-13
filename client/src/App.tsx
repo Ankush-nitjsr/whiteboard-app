@@ -22,14 +22,27 @@ const connectionOptions = {
 const socket = io(server, connectionOptions);
 
 const App = () => {
-  const [user, setUser] = useState<User>({
-    host: false,
-    name: "",
-    presenter: false,
-    roomId: "",
-    userId: "",
+  const [user, setUser] = useState<User>(() => {
+    // Retrieve user from localStorage or initialize it
+    const savedUser = localStorage.getItem("user");
+    return savedUser
+      ? JSON.parse(savedUser)
+      : {
+          name: "",
+          userId: "",
+          roomId: "",
+          socketId: "",
+          host: false,
+          presenter: false,
+        };
   });
+
   const [users, setUsers] = useState<Users>([]);
+
+  // Save user data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("user", JSON.stringify(user));
+  }, [user]);
 
   useEffect(() => {
     const userJoinedHandler = (data: UserJoinedData) => {
