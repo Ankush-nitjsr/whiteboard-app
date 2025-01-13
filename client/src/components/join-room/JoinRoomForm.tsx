@@ -20,8 +20,9 @@ export const JoinRoomForm = ({ uuid, socket, setUser }: JoinRoomFormProps) => {
 
     const roomData = {
       name,
-      roomId,
       userId: uuid(),
+      roomId,
+      socketId: socket.id,
       host: false,
       presenter: false,
     };
