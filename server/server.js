@@ -113,15 +113,60 @@ io.on("connection", (socket) => {
   socket.on("whiteboardData", async (data) => {
     try {
       const { imageUrl, roomId } = data;
-
-      await whiteboardServices.updateWhiteboard({ roomId, imageUrl });
+      // Update whiteboard data
+      const whiteboard = await whiteboardServices.updateWhiteboard({
+        roomId,
+        imageUrl,
+      });
       socket.broadcast
         .to(roomId)
-        .emit("whiteboardDataResponse", { imgURL: imageUrl });
+        .emit("whiteboardDataResponse", { data: whiteboard });
       console.log(`Whiteboard updated for room: ${roomId}`);
     } catch (error) {
       console.error("Error in whiteboardData:", error.message);
       socket.emit("error", { message: "Failed to update whiteboard" });
+    }
+  });
+
+  socket.on("saveWhiteboardData", async ({ imageUrl, roomId }) => {
+    try {
+      await whiteboardServices.updateWhiteboard({ roomId, imageUrl });
+      console.log(`Whiteboard saved for room: ${roomId}`);
+    } catch (error) {
+      console.error("Error in whiteboardData:", error.message);
+      socket.emit("error", { message: "Failed to update whiteboard" });
+    }
+  });
+
+  /* Fetch saved data for the roomId */
+  socket.on("loadData", async ({ roomId }) => {
+    try {
+      // Ensure the socket is in the room
+      if (!roomId) {
+        throw new Error("Room ID is required");
+      }
+      socket.join(roomId);
+
+      // Get all users in the room
+      const usersInRoom = await userServices.getUsersInRoom(roomId);
+      if (!usersInRoom || usersInRoom.length === 0) {
+        throw new Error("No users found in the room");
+      }
+      socket.emit("userIsJoined", { success: true, users: usersInRoom });
+      socket.broadcast.to(roomId).emit("allUsers", usersInRoom);
+
+      // Get the whiteboard data for the room
+      const whiteboard = await whiteboardServices.getWhiteboard(roomId);
+      if (!whiteboard) {
+        console.warn(`No whiteboard data found for room: ${roomId}`);
+        return;
+      }
+
+      // Emit the whiteboard data to the calling socket
+      socket.emit("whiteboardDataResponse", { data: whiteboard });
+    } catch (error) {
+      console.error("Error in loadData:", error.message);
+      socket.emit("error", { message: "Failed to load room data" });
     }
   });
 
