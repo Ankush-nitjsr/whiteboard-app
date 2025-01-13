@@ -6,4 +6,5 @@ export default interface Element {
   height?: number;
   path?: [number, number][];
   stroke: string;
+  strokeWidth?: number;
 }
