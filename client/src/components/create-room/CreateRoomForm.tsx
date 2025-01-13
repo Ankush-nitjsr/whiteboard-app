@@ -43,7 +43,7 @@ const CreateRoomForm = ({ uuid, socket, setUser }: CreateRoomFormProps) => {
 
   return (
     <form
-      className="flex flex-col w-full max-w-md p-6 space-y-6 bg-white shadow-md rounded-lg border border-gray-200"
+      className="flex flex-col w-11/12 sm:w-96 p-6 space-y-6 bg-white shadow-md rounded-lg border border-gray-200"
       onSubmit={handleCreateRoom}
     >
       <h1 className="text-2xl font-bold text-blue-600 text-center">
