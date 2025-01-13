@@ -32,9 +32,29 @@ export const NewBoard = ({
   const [img, setImg] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Whiteboard dimensions (same for both presenters and non-presenters)
-  const whiteboardWidth = 900;
-  const whiteboardHeight = 400;
+  // Define default Whiteboard dimensions (same for both presenters and non-presenters)
+  const defaultWidth = 900;
+  const defaultHeight = 600;
+
+  const [whiteboardWidth, setWhiteboardWidth] = useState(defaultWidth);
+  const [whiteboardHeight, setWhiteboardHeight] = useState(defaultHeight);
+
+  // Adjust canvas size dynamically based on screen size
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      const width = Math.min(window.innerWidth * 0.9, 900);
+      const height = width * 0.5; // Maintain 16:9 aspect ratio
+      setWhiteboardWidth(width);
+      setWhiteboardHeight(height);
+    };
+
+    updateCanvasSize();
+    window.addEventListener("resize", updateCanvasSize);
+
+    return () => {
+      window.removeEventListener("resize", updateCanvasSize);
+    };
+  }, []);
 
   // Listen for whiteboard updates from the server
   useEffect(() => {
@@ -47,84 +67,89 @@ export const NewBoard = ({
     };
   }, [socket]);
 
-  // Initialize the canvas context
+  // Initialize the canvas context only if the user is the presenter
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctxRef.current = ctx;
-      } else {
-        console.error("Failed to get 2d context.");
-      }
-    } else {
-      console.error("Canvas element not available.");
-    }
-  }, [canvasRef, ctxRef, color, brushSize]);
-
-  // Render the elements on the canvas
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const roughCanvas = rough.canvas(canvasRef.current);
-
-      if (elements.length > 0) {
-        ctxRef.current?.clearRect(
-          0,
-          0,
-          canvasRef.current?.width || 0,
-          canvasRef.current?.height || 0
-        );
-      }
-
-      elements.forEach((element) => {
-        if (element.type === "rectangle") {
-          roughCanvas.draw(
-            roughGenerator.rectangle(
-              element.offsetX,
-              element.offsetY,
-              element.width || 0,
-              element.height || 0,
-              {
-                stroke: element.stroke,
-                strokeWidth: 2,
-                roughness: 0,
-              }
-            )
-          );
-        } else if (element.type === "line") {
-          roughCanvas.draw(
-            roughGenerator.line(
-              element.offsetX,
-              element.offsetY,
-              element.width || 0,
-              element.height || 0,
-              {
-                stroke: element.stroke,
-                strokeWidth: 2,
-                roughness: 0,
-              }
-            )
-          );
-        } else if (element.type === "pencil" && element.path) {
-          roughCanvas.linearPath(element.path, {
-            stroke: element.stroke,
-            strokeWidth: 2,
-            roughness: 0,
-          });
+    if (user?.presenter) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = brushSize;
+          ctx.lineCap = "round";
+          ctxRef.current = ctx;
+        } else {
+          console.error("Failed to get 2d context.");
         }
-      });
-
-      const canvasImage = canvasRef.current?.toDataURL();
-      socket.emit("whiteboardData", {
-        imgUrl: canvasImage,
-        roomId: user.roomId,
-      });
+      } else {
+        console.error("Canvas element not available.");
+      }
     }
-  }, [elements, canvasRef, ctxRef, socket, user.roomId]);
+  }, [canvasRef, ctxRef, color, brushSize, user?.presenter]);
+
+  // Render the elements on the canvas for presenters only
+  useLayoutEffect(() => {
+    if (user?.presenter) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const roughCanvas = rough.canvas(canvasRef.current);
+
+        if (elements.length > 0) {
+          ctxRef.current?.clearRect(
+            0,
+            0,
+            canvasRef.current?.width || 0,
+            canvasRef.current?.height || 0
+          );
+        }
+
+        elements.forEach((element) => {
+          if (element.type === "rectangle") {
+            roughCanvas.draw(
+              roughGenerator.rectangle(
+                element.offsetX,
+                element.offsetY,
+                element.width || 0,
+                element.height || 0,
+                {
+                  stroke: element.stroke,
+                  strokeWidth: 2,
+                  roughness: 0,
+                }
+              )
+            );
+          } else if (element.type === "line") {
+            roughCanvas.draw(
+              roughGenerator.line(
+                element.offsetX,
+                element.offsetY,
+                element.width || 0,
+                element.height || 0,
+                {
+                  stroke: element.stroke,
+                  strokeWidth: 2,
+                  roughness: 0,
+                }
+              )
+            );
+          } else if (element.type === "pencil" && element.path) {
+            roughCanvas.linearPath(element.path, {
+              stroke: element.stroke,
+              strokeWidth: 2,
+              roughness: 0,
+            });
+          }
+        });
+
+        const canvasImage = canvasRef.current?.toDataURL();
+
+        socket.emit("whiteboardData", {
+          imageUrl: canvasImage,
+          roomId: user.roomId,
+        });
+      }
+    }
+  }, [elements, canvasRef, ctxRef, socket, user.roomId, user?.presenter]);
 
   // If the user is not the presenter, display the shared image
   if (!user?.presenter) {
@@ -132,8 +157,8 @@ export const NewBoard = ({
       <div
         className="border border-black flex justify-center items-center"
         style={{
-          width: whiteboardWidth,
-          height: whiteboardHeight,
+          width: `${whiteboardWidth}px`,
+          height: `${whiteboardHeight}px`,
           backgroundColor: "white",
         }}
       >
@@ -264,7 +289,11 @@ export const NewBoard = ({
       style={{
         backgroundColor: "white",
         border: "1px solid #ccc",
+        width: "100%",
+        maxWidth: "900px",
+        height: "auto",
         display: "block",
+        margin: "0 auto",
       }}
     />
   );
