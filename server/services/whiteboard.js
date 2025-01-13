@@ -12,7 +12,6 @@ async function getWhiteboard(roomId) {
       console.warn(`No whiteboard found for roomId: ${roomId}`);
       return null;
     }
-    console.log("GetWhiteboard result: ", result);
     return result[0];
   } catch (error) {
     console.error(`Error fetching whiteboard for roomId ${roomId}:`, error);
